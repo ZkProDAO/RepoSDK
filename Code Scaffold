@@ -1,0 +1,128 @@
+// ================================
+// File: prover/index.ts
+// ================================
+
+export type TLSProofInput = {
+  sessionTranscript: string;
+  publicKey: string;
+};
+
+export type ZkProof = {
+  proof: string; // placeholder for zk proof bytes
+  publicSignals: Record<string, any>;
+};
+
+export async function generateZkTLSProof(
+  input: TLSProofInput
+): Promise<ZkProof> {
+  // NOTE: This is a scaffold, not a real zkTLS implementation
+
+  const hash = Buffer.from(input.sessionTranscript).toString("base64");
+
+  return {
+    proof: `zkproof_${hash.slice(0, 32)}`,
+    publicSignals: {
+      tls_pubkey: input.publicKey,
+      transcript_hash: hash,
+    },
+  };
+}
+
+// ================================
+// File: verifier/index.ts
+// ================================
+
+import { ZkProof } from "../prover";
+
+export function verifyZkTLSProof(proof: ZkProof): boolean {
+  // Placeholder verification logic
+  if (!proof.proof.startsWith("zkproof_")) return false;
+  if (!proof.publicSignals?.transcript_hash) return false;
+
+  return true;
+}
+
+// ================================
+// File: sdk/index.ts
+// ================================
+
+import { generateZkTLSProof, TLSProofInput } from "../prover";
+import { verifyZkTLSProof } from "../verifier";
+
+export class ZkProClient {
+  async prove(input: TLSProofInput) {
+    return generateZkTLSProof(input);
+  }
+
+  verify(proof: Awaited<ReturnType<typeof generateZkTLSProof>>) {
+    return verifyZkTLSProof(proof);
+  }
+}
+
+// ================================
+// File: examples/basic.ts
+// ================================
+
+import { ZkProClient } from "../sdk";
+
+async function main() {
+  const client = new ZkProClient();
+
+  const proof = await client.prove({
+    sessionTranscript: "GET /account/balance HTTP/1.1",
+    publicKey: "tls-server-pubkey",
+  });
+
+  const isValid = client.verify(proof);
+
+  console.log("Proof:", proof);
+  console.log("Valid:", isValid);
+}
+
+main();
+
+// ================================
+// File: circuits/README.md
+// ================================
+
+# zkTLS Circuits
+
+This directory will contain zero-knowledge circuits responsible for:
+- Verifying TLS session integrity
+- Binding server public keys
+- Hashing and committing session transcripts
+
+Circuits are intentionally omitted in this scaffold.
+
+// ================================
+// File: package.json
+// ================================
+
+{
+  "name": "zkpro",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "example": "ts-node examples/basic.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
+
+// ================================
+// File: tsconfig.json
+// ================================
+
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
